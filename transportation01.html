@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Vehicle Party - 台灣兒童美語協會製作</title>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        /* =========================================
+           1. 基礎設定
+        ========================================= */
+        * { box-sizing: border-box; font-family: 'Nunito', sans-serif; }
+        body {
+            background-color: #232323;
+            background-image: radial-gradient(circle at center, #444 0%, #222 100%);
+            margin: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
+            min-height: 100vh; color: #eee; touch-action: manipulation; padding: 10px; gap: 10px;
+        }
+
+        /* =========================================
+           2. 響應式大圖鑑外框
+        ========================================= */
+        .pokedex-frame {
+            position: relative;
+            width: 100%; max-width: 800px; aspect-ratio: 3/4; max-height: 85vh;
+            background: linear-gradient(145deg, #FF5E75, #DC0A2D);
+            border-radius: 30px; padding: 15px;
+            box-shadow: inset 5px 5px 15px rgba(255,255,255,0.4), inset -5px -5px 15px rgba(0,0,0,0.3), 0 20px 40px rgba(0,0,0,0.5);
+            display: flex; flex-direction: column; margin-bottom: 0;
+        }
+        .pokedex-top { display: flex; align-items: flex-start; margin-bottom: 10px; padding-bottom: 10px; border-bottom: 3px solid rgba(0,0,0,0.2); flex-shrink: 0; }
+        .camera-lens { width: 50px; height: 50px; background: radial-gradient(circle at 30% 30%, #4FC3F7, #01579B); border-radius: 50%; border: 4px solid #eee; box-shadow: 0 0 15px rgba(79, 195, 247, 0.8); margin-right: 15px; animation: pulse 3s infinite; }
+        .small-lights { display: flex; gap: 8px; margin-top: 5px; }
+        .light { width: 12px; height: 12px; border-radius: 50%; border: 2px solid rgba(0,0,0,0.3); box-shadow: inset 2px 2px 5px rgba(255,255,255,0.5); }
+        .light.red { background: #FF0000; } .light.yellow { background: #FFEB3B; } .light.green { background: #00E676; }
+
+        /* =========================================
+           3. 螢幕與遊戲區
+        ========================================= */
+        #game-wrapper {
+            position: relative; width: 100%; flex-grow: 1;
+            background: #222; border-radius: 20px; border: 4px solid #555; overflow: hidden; box-shadow: inset 0 0 20px #000;
+            display: flex; flex-direction: column;
+        }
+        #game-container {
+            width: 100%; height: 100%;
+            background: linear-gradient(to bottom, #90CAF9, #E0E0E0);
+            padding: 15px; display: none; flex-direction: column; position: relative; z-index: 10; flex-grow: 1;
+        }
+        #game-container[style*="display: block"] { display: flex !important; }
+
+        .hud { 
+            display: flex; flex-direction: column; gap: 5px;
+            margin-bottom: 10px; color: #333; font-weight: 900; 
+            background: rgba(255,255,255,0.8); padding: 8px 15px; border-radius: 15px; 
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1); backdrop-filter: blur(5px); flex-shrink: 0;
+        }
+        
+        .hud-row { display: flex; justify-content: space-between; align-items: center; width: 100%; font-size: 1.1rem;}
+        
+        .progress-container { width: 100%; height: 10px; background: #E0E0E0; border-radius: 5px; overflow: hidden; border: 1px solid #ccc; }
+        .progress-fill { height: 100%; width: 0%; background: linear-gradient(90deg, #FFC107, #FF9800); transition: width 0.3s cubic-bezier(0.4, 0.0, 0.2, 1); }
+
+        .timer-bar-bg { width: 100%; height: 10px; background: rgba(0,0,0,0.2); border-radius: 10px; margin-bottom: 10px; overflow: hidden; flex-shrink: 0;}
+        .timer-bar-fill { height: 100%; background: linear-gradient(to right, #4CAF50, #8BC34A); width: 100%; border-radius: 10px; transition: width 0.1s linear; }
+
+        .pika-btn { background: none; border: none; width: 100px; height: 80px; cursor: pointer; margin: 0 auto 5px auto; display: block; transition: transform 0.1s; filter: drop-shadow(0 5px 10px rgba(0,0,0,0.2)); flex-shrink: 0;}
+        .pika-btn:active { transform: scale(0.9); }
+        .pika-svg { width: 100%; height: 100%; }
+        .listen-hint { font-size: 0.8rem; color: #555; text-align: center; margin-bottom: 10px; font-weight: bold; flex-shrink: 0;}
+
+        /* --- 選項按鈕 --- */
+        .options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; flex-grow: 1; align-items: center; justify-items: center; }
+        .option-btn {
+            background: #FFF; border-radius: 15px; cursor: pointer;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            display: flex; align-items: center; justify-content: center;
+            padding: 8px; transition: all 0.2s; border: 3px solid transparent;
+            width: 100%; height: 100%; aspect-ratio: 1 / 1; max-height: 140px;
+        }
+        .option-btn:active { transform: scale(0.95); box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .option-svg { width: 100%; height: 100%; filter: drop-shadow(0 4px 4px rgba(0,0,0,0.1)); }
+        .correct { background-color: #C8E6C9 !important; border-color: #2E7D32 !important; transform: scale(1.05) !important; }
+        .wrong { background-color: #FFCDD2 !important; border-color: #C62828 !important; opacity: 0.6; pointer-events: none; }
+
+        /* =========================================
+           4. 拼字特效
+        ========================================= */
+        #spelling-overlay { 
+            position: absolute; top: 15%; left: 50%; transform: translate(-50%, -50%) scale(0.5);
+            font-size: clamp(2.5rem, 10vw, 5rem); font-weight: 900; color: #FFD700; 
+            -webkit-text-stroke: clamp(1px, 0.5vw, 3px) #fff; paint-order: stroke fill; filter: drop-shadow(3px 3px 0px rgba(0,0,0,0.8));
+            opacity: 0; pointer-events: none; z-index: 30; transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
+            text-transform: uppercase; width: 90%; text-align: center; letter-spacing: 2px; white-space: nowrap;
+        }
+        .show-spelling { opacity: 1 !important; transform: translate(-50%, -50%) scale(1.2) !important; }
+
+        /* 選單與其他 */
+        #menu-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.88); backdrop-filter: blur(8px); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 50; color: #eee; padding: 20px; text-align: center; }
+        #title-text { font-size: 2.2rem; margin: 10px 0 15px 0; color: #ffffff; text-shadow: 0 3px 5px rgba(0,0,0,0.3); font-weight: 900; letter-spacing: 1px; }
+        .btn-start { padding: 12px 40px; font-size: 1.2rem; background: linear-gradient(to right, #3B4CCA, #5C6BC0); color: white; border: none; border-radius: 50px; cursor: pointer; margin-top: 20px; box-shadow: 0 10px 20px rgba(59, 76, 202, 0.4); font-weight: 900; transition: transform 0.2s;}
+        .btn-start:active { transform: scale(0.95); }
+        #confetti-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 40; }
+        .win-message { font-size: 3rem; color: #FFD700; text-shadow: 0 0 20px #E65100; margin-bottom: 5px; font-weight: 900; line-height: 1.2;}
+        .best-score-box { background: rgba(255,255,255,0.15); border: 2px solid #FFCB05; color: #FFCB05; padding: 5px 20px; border-radius: 20px; font-weight: bold; font-size: 1rem;}
+        
+        .time-result { font-size: 1.8rem; color: #fff; font-weight: bold; margin-bottom: 20px; text-shadow: 2px 2px 0 #333; }
+
+        /* =========================================
+           5. 頁尾 (圖片)
+        ========================================= */
+        .site-footer {
+            margin-top: 0; 
+            padding: 10px 15px;
+            text-align: center;
+            display: flex;
+            flex-direction: row; /* 單行水平排列 */
+            justify-content: center;
+            align-items: center;
+            flex-wrap: wrap; 
+            gap: 10px;
+            background: rgba(255, 255, 255, 0.9); 
+            border-radius: 20px; 
+            backdrop-filter: blur(5px); 
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+
+        .footer-logo {
+            max-height: 50px; /* 控制圖片高度 */
+            width: auto;
+        }
+        
+        /* 大螢幕適配 */
+        @media (min-width: 768px) {
+            .pokedex-frame { padding: 35px; border-radius: 50px; aspect-ratio: auto; min-height: 700px; }
+            #title-text { font-size: 3.5rem; }
+            .pika-btn { width: 150px; height: 120px; }
+            .hud { font-size: 1.3rem; }
+            .site-footer { gap: 15px; margin-top: 10px; padding: 15px 30px;}
+            .footer-logo { max-height: 60px; } /* 大螢幕圖片稍大 */
+        }
+    </style>
+</head>
+<body>
+
+    <div class="pokedex-frame">
+        <div class="pokedex-top">
+            <div class="camera-lens"></div>
+            <div class="small-lights"><div class="light red"></div><div class="light yellow"></div><div class="light green"></div></div>
+        </div>
+
+        <div id="game-wrapper">
+            <canvas id="confetti-canvas"></canvas>
+
+            <div id="menu-layer">
+                <svg width="100" height="100" viewBox="0 0 100 100" style="filter: drop-shadow(0 4px 4px rgba(0,0,0,0.3));">
+                    <circle cx="50" cy="50" r="45" fill="#eee"/>
+                    <path d="M 5 50 A 45 45 0 0 1 95 50 L 5 50" fill="#F44336"/>
+                    <rect x="5" y="45" width="90" height="10" fill="#333"/>
+                    <circle cx="50" cy="50" r="15" fill="white" stroke="#333" stroke-width="5"/>
+                </svg>
+                
+                <h1 id="title-text">Vehicle Party</h1>
+
+                <div class="best-score-box">Best Score: <span id="high-score-num">0</span></div>
+                
+                <div id="final-message" style="display:none; text-align:center; margin-top: 15px;">
+                    <div class="win-message" id="win-text">YOU WIN!</div>
+                    <div class="time-result" id="final-time-text">Total Time: 0.00s</div>
+                    <div style="font-size:1.2rem; margin-bottom:20px; color:#ddd;">Correct: 10/10</div>
+                </div>
+
+                <div id="final-score" style="display:none; font-size:2.5rem; color: #FFCB05; margin:15px; font-weight:900;">0</div>
+
+                <button class="btn-start" onclick="initGame()">START GAME</button>
+            </div>
+
+            <div id="spelling-overlay">CAR</div>
+
+            <div id="game-container">
+                <div class="hud">
+                    <div class="hud-row">
+                        <div style="font-family:'Courier New', monospace; font-weight:bold; color:#D32F2F; font-variant-numeric: tabular-nums;">Time: <span id="precise-timer">0.00</span></div>
+                        <div>Correct: <span id="score">0</span>/10</div>
+                    </div>
+                    <div class="progress-container">
+                        <div class="progress-fill" id="progress-bar"></div>
+                    </div>
+                </div>
+                
+                <div class="timer-bar-bg"><div class="timer-bar-fill" id="timer-bar"></div></div>
+
+                <button class="pika-btn" onclick="speakCurrentWord()">
+                    <svg class="pika-svg" viewBox="0 0 200 160" xmlns="http://www.w3.org/2000/svg">
+                        <defs><radialGradient id="cheekGrad" cx="50%" cy="50%" r="50%" fx="50%" fy="50%"><stop offset="0%" style="stop-color:#FF5252" /><stop offset="100%" style="stop-color:#E53935" /></radialGradient></defs>
+                        <path d="M 160 80 L 180 40 L 160 40 L 170 10" stroke="black" stroke-width="4" fill="#FFCB05" stroke-linejoin="round" transform="rotate(10 160 80)"/>
+                        <ellipse cx="60" cy="50" rx="15" ry="45" fill="#FFCB05" stroke="black" stroke-width="4" transform="rotate(-30 60 50)"/>
+                        <path d="M 48 15 L 72 25 L 60 50 Z" fill="black" transform="rotate(-30 60 50) translate(-8 -15)"/>
+                        <ellipse cx="140" cy="50" rx="15" ry="45" fill="#FFCB05" stroke="black" stroke-width="4" transform="rotate(30 140 50)"/>
+                        <path d="M 128 25 L 152 15 L 140 50 Z" fill="black" transform="rotate(30 140 50) translate(8 -15)"/>
+                        <ellipse cx="100" cy="95" rx="75" ry="60" fill="#FFCB05" stroke="black" stroke-width="4"/>
+                        <circle cx="70" cy="85" r="10" fill="black"/> <circle cx="75" cy="80" r="4" fill="white"/>
+                        <circle cx="130" cy="85" r="10" fill="black"/> <circle cx="135" cy="80" r="4" fill="white"/>
+                        <circle cx="50" cy="110" r="15" fill="url(#cheekGrad)" /> <circle cx="150" cy="110" r="15" fill="url(#cheekGrad)" />
+                        <path d="M 95 100 Q 100 105 105 100" stroke="black" stroke-width="3" fill="none" stroke-linecap="round"/>
+                        <path d="M 80 115 Q 100 135 120 115" stroke="black" stroke-width="4" fill="none" stroke-linecap="round"/>
+                    </svg>
+                </button>
+                <div class="listen-hint">Tap Pikachu to Listen</div>
+                <div class="options-grid" id="options-area"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="site-footer">
+        <img src="image_0.png" alt="台灣兒童美語協會" class="footer-logo">
+    </div>
+
+    <script>
+        // 15 種交通工具
+        const wordData = [
+            { w: "Car", t: "car" }, 
+            { w: "Bus", t: "bus" }, 
+            { w: "Taxi", t: "taxi" }, 
+            { w: "Police Car", t: "police" },
+            { w: "Ambulance", t: "ambulance" }, 
+            { w: "Fire Truck", t: "firetruck" }, 
+            { w: "Bicycle", t: "bicycle" }, 
+            { w: "Motorcycle", t: "motorcycle" },
+            { w: "Train", t: "train" }, 
+            { w: "Airplane", t: "airplane" }, 
+            { w: "Helicopter", t: "helicopter" }, 
+            { w: "Boat", t: "boat" },
+            { w: "Ship", t: "ship" }, 
+            { w: "Truck", t: "truck" }, 
+            { w: "Rocket", t: "rocket" }
+        ];
+
+        function getSVG(type) {
+            let c = ''; 
+            const s = 'stroke="#333" stroke-width="3"'; 
+            switch (type) {
+                case 'car': c = `<path d="M 15 55 L 25 35 H 75 L 85 55 V 70 H 15 Z" fill="#42A5F5" ${s}/><path d="M 30 38 H 70 L 80 55 H 20 Z" fill="#BBDEFB" ${s}/><circle cx="30" cy="70" r="10" fill="#333"/><circle cx="30" cy="70" r="4" fill="#999"/><circle cx="70" cy="70" r="10" fill="#333"/><circle cx="70" cy="70" r="4" fill="#999"/>`; break;
+                case 'bus': c = `<rect x="10" y="25" width="80" height="45" rx="5" fill="#FFB74D" ${s}/><rect x="15" y="30" width="15" height="15" fill="#E3F2FD" ${s}/><rect x="35" y="30" width="15" height="15" fill="#E3F2FD" ${s}/><rect x="55" y="30" width="15" height="15" fill="#E3F2FD" ${s}/><rect x="75" y="30" width="10" height="15" fill="#E3F2FD" ${s}/><circle cx="25" cy="70" r="8" fill="#333"/><circle cx="75" cy="70" r="8" fill="#333"/><path d="M 10 50 H 90" stroke="#E65100" stroke-width="2"/>`; break;
+                case 'taxi': c = `<path d="M 15 55 L 25 35 H 75 L 85 55 V 70 H 15 Z" fill="#FDD835" ${s}/><path d="M 30 38 H 70 L 80 55 H 20 Z" fill="#E3F2FD" ${s}/><rect x="40" y="28" width="20" height="7" fill="#333" ${s}/><circle cx="30" cy="70" r="10" fill="#333"/><circle cx="30" cy="70" r="4" fill="#999"/><circle cx="70" cy="70" r="10" fill="#333"/><circle cx="70" cy="70" r="4" fill="#999"/><path d="M 15 58 H 85" stroke="#333" stroke-width="2" stroke-dasharray="4,4"/>`; break;
+                case 'police': c = `<path d="M 15 55 L 25 35 H 75 L 85 55 V 70 H 15 Z" fill="#333" ${s}/><path d="M 15 55 L 25 55 L 25 70 L 15 70 Z" fill="white"/><path d="M 75 55 L 85 55 L 85 70 L 75 70 Z" fill="white"/><rect x="35" y="55" width="30" height="15" fill="white"/><path d="M 30 38 H 70 L 80 55 H 20 Z" fill="#E3F2FD" ${s}/><rect x="40" y="28" width="10" height="7" fill="#F44336" ${s}/><rect x="50" y="28" width="10" height="7" fill="#2196F3" ${s}/><circle cx="30" cy="70" r="10" fill="#333"/><circle cx="30" cy="70" r="4" fill="#999"/><circle cx="70" cy="70" r="10" fill="#333"/><circle cx="70" cy="70" r="4" fill="#999"/>`; break;
+                case 'ambulance': c = `<rect x="10" y="25" width="80" height="45" rx="5" fill="#FAFAFA" ${s}/><path d="M 60 25 V 70" stroke="#EEEEEE" stroke-width="2"/><rect x="15" y="30" width="15" height="15" fill="#E3F2FD" ${s}/><rect x="45" y="35" width="25" height="25" fill="#F44336"/><rect x="53" y="25" width="8" height="45" fill="#FAFAFA"/><rect x="45" y="43" width="25" height="8" fill="#FAFAFA"/><circle cx="25" cy="70" r="8" fill="#333"/><circle cx="75" cy="70" r="8" fill="#333"/><rect x="40" y="20" width="10" height="5" fill="#F44336" ${s}/>`; break;
+                case 'firetruck': c = `<rect x="10" y="35" width="60" height="35" fill="#F44336" ${s}/><rect x="70" y="25" width="25" height="45" fill="#F44336" ${s}/><rect x="75" y="30" width="15" height="15" fill="#E3F2FD" ${s}/><rect x="15" y="25" width="50" height="8" fill="#FFCC80" ${s}/><line x1="20" y1="25" x2="20" y2="33" stroke="#333" stroke-width="2"/><line x1="30" y1="25" x2="30" y2="33" stroke="#333" stroke-width="2"/><line x1="40" y1="25" x2="40" y2="33" stroke="#333" stroke-width="2"/><line x1="50" y1="25" x2="50" y2="33" stroke="#333" stroke-width="2"/><line x1="60" y1="25" x2="60" y2="33" stroke="#333" stroke-width="2"/><circle cx="25" cy="70" r="8" fill="#333"/><circle cx="50" cy="70" r="8" fill="#333"/><circle cx="80" cy="70" r="8" fill="#333"/>`; break;
+                case 'bicycle': c = `<circle cx="25" cy="65" r="15" fill="none" stroke="#333" stroke-width="4"/><circle cx="75" cy="65" r="15" fill="none" stroke="#333" stroke-width="4"/><path d="M 25 65 L 45 65 L 60 40 L 75 65" stroke="#F44336" stroke-width="3" fill="none"/><path d="M 45 65 L 35 40 L 60 40" stroke="#F44336" stroke-width="3" fill="none"/><path d="M 35 40 L 30 30" stroke="#333" stroke-width="3"/><path d="M 25 30 L 35 30" stroke="#333" stroke-width="3"/><path d="M 45 65 L 45 55 L 50 55" stroke="#333" stroke-width="3"/><path d="M 60 40 L 60 35" stroke="#333" stroke-width="3"/><rect x="55" y="33" width="10" height="2" fill="#333"/>`; break;
+                case 'motorcycle': c = `<circle cx="25" cy="65" r="12" fill="#333" stroke="#555" stroke-width="2"/><circle cx="75" cy="65" r="12" fill="#333" stroke="#555" stroke-width="2"/><path d="M 25 65 L 40 50 L 60 50 L 70 40" stroke="#1976D2" stroke-width="6" fill="none"/><path d="M 40 50 L 45 35" stroke="#333" stroke-width="4"/><rect x="40" y="35" width="25" height="10" rx="5" fill="#333"/><path d="M 60 50 L 75 65" stroke="#555" stroke-width="4"/><rect x="68" y="38" width="8" height="4" fill="#333"/>`; break;
+                case 'train': c = `<rect x="25" y="30" width="50" height="40" fill="#43A047" ${s}/><rect x="75" y="45" width="15" height="25" fill="#43A047" ${s}/><rect x="10" y="20" width="5" height="15" fill="#333"/><circle cx="35" cy="70" r="8" fill="#333" stroke="#555" stroke-width="2"/><circle cx="55" cy="70" r="8" fill="#333" stroke="#555" stroke-width="2"/><circle cx="80" cy="70" r="6" fill="#333" stroke="#555" stroke-width="2"/><rect x="30" y="35" width="15" height="15" fill="#E3F2FD" ${s}/><rect x="55" y="35" width="15" height="15" fill="#E3F2FD" ${s}/><path d="M 25 70 H 90" stroke="#333" stroke-width="2"/><path d="M 12 15 Q 5 5 15 5" stroke="#9E9E9E" stroke-width="2" fill="none"/>`; break;
+                case 'airplane': c = `<path d="M 10 50 Q 10 40 30 40 H 80 Q 95 40 95 50 Q 95 60 80 60 H 30 Q 10 60 10 50" fill="#ECEFF1" ${s}/><path d="M 40 40 L 50 20 H 65 L 60 40" fill="#90A4AE" ${s}/><path d="M 40 60 L 50 80 H 65 L 60 60" fill="#90A4AE" ${s}/><path d="M 80 40 L 85 25 H 95 L 90 40" fill="#90A4AE" ${s}/><circle cx="25" cy="50" r="3" fill="#E3F2FD" ${s}/><circle cx="35" cy="50" r="3" fill="#E3F2FD" ${s}/><circle cx="45" cy="50" r="3" fill="#E3F2FD" ${s}/>`; break;
+                case 'helicopter': c = `<ellipse cx="50" cy="50" rx="25" ry="20" fill="#FF7043" ${s}/><path d="M 25 50 L 5 50 L 5 40 L 10 40 L 10 60 L 5 60 L 5 50" fill="#FF7043" ${s}/><path d="M 50 30 V 20 H 20 M 50 20 H 80" stroke="#333" stroke-width="3"/><circle cx="50" cy="20" r="2" fill="#333"/><path d="M 60 50 Q 70 50 70 60 L 50 60" fill="#E3F2FD" ${s}/><path d="M 40 70 V 75 H 30 M 60 70 V 75 H 70 M 25 75 H 75" stroke="#333" stroke-width="3"/>`; break;
+                case 'boat': c = `<path d="M 20 65 Q 50 85 80 65 L 70 50 H 30 Z" fill="#8D6E63" ${s}/><path d="M 50 50 V 15 L 75 35 L 50 45" fill="#E3F2FD" ${s}/><path d="M 50 15 L 25 35 L 50 45" fill="#2196F3" ${s}/><line x1="50" y1="15" x2="50" y2="50" stroke="#333" stroke-width="2"/>`; break;
+                case 'ship': c = `<path d="M 15 60 L 25 45 H 75 L 85 60 Q 50 80 15 60" fill="#607D8B" ${s}/><rect x="35" y="30" width="30" height="15" fill="#CFD8DC" ${s}/><rect x="45" y="20" width="10" height="10" fill="#333" ${s}/><circle cx="40" cy="37" r="3" fill="#E3F2FD" ${s}/><circle cx="50" cy="37" r="3" fill="#E3F2FD" ${s}/><circle cx="60" cy="37" r="3" fill="#E3F2FD" ${s}/><path d="M 10 65 Q 30 75 50 65 Q 70 55 90 65" stroke="#2196F3" stroke-width="3" fill="none"/>`; break;
+                case 'truck': c = `<rect x="10" y="30" width="50" height="35" fill="#FFA726" ${s}/><rect x="60" y="40" width="30" height="25" fill="#1565C0" ${s}/><rect x="65" y="45" width="10" height="10" fill="#E3F2FD" ${s}/><circle cx="25" cy="65" r="8" fill="#333" stroke="#555" stroke-width="2"/><circle cx="45" cy="65" r="8" fill="#333" stroke="#555" stroke-width="2"/><circle cx="75" cy="65" r="8" fill="#333" stroke="#555" stroke-width="2"/>`; break;
+                case 'rocket': c = `<path d="M 50 10 Q 70 40 70 70 H 30 Q 30 40 50 10 Z" fill="#EEEEEE" ${s}/><circle cx="50" cy="45" r="10" fill="#E3F2FD" ${s}/><path d="M 30 70 L 20 85 H 35" fill="#F44336" ${s}/><path d="M 70 70 L 80 85 H 65" fill="#F44336" ${s}/><path d="M 40 70 L 45 80 L 50 75 L 55 80 L 60 70" fill="#FF9800"/>`; break;
+            }
+            return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">${c}</svg>`;
+        }
+
+        let currentScore = 0; let combo = 0; let lives = 3; let maxTime = 5000;
+        let timerInterval; let isPlaying = false; let highScore = 0; let currentTarget = null;
+        let synth = window.speechSynthesis;
+        let gameStartTime; 
+
+        const elMenu = document.getElementById('menu-layer');
+        const elGame = document.getElementById('game-container');
+        const elScore = document.getElementById('score');
+        const elTimer = document.getElementById('timer-bar');
+        const elProgress = document.getElementById('progress-bar');
+        const elOptions = document.getElementById('options-area');
+        const elFinalScore = document.getElementById('final-score');
+        const elHighScoreNum = document.getElementById('high-score-num');
+        const canvas = document.getElementById('confetti-canvas');
+        const ctx = canvas.getContext('2d');
+        const gameWrapper = document.getElementById('game-wrapper');
+        const btnStart = document.querySelector('.btn-start');
+        const elFinalMessage = document.getElementById('final-message');
+        const elWinText = document.getElementById('win-text');
+        const elPreciseTimer = document.getElementById('precise-timer');
+        const elFinalTimeText = document.getElementById('final-time-text');
+
+        const cheerWords = ["Awesome!", "Great Job!", "Fantastic!", "Super Star!", "Amazing!", "Excellent!"];
+
+        window.onload = function() {
+            const savedScore = localStorage.getItem('vehicleSvgHighScore');
+            if (savedScore) highScore = parseInt(savedScore);
+            elHighScoreNum.innerText = highScore;
+            resizeCanvas();
+        };
+        window.onresize = resizeCanvas;
+
+        function initGame() {
+            currentScore = 0; maxTime = 5000;
+            elScore.innerText = "0"; 
+            elProgress.style.width = "0%";
+            elMenu.style.display = "none"; 
+            elFinalMessage.style.display = "none";
+            elFinalScore.style.display = "none";
+            elGame.style.display = "block";
+            confettiActive = false; ctx.clearRect(0,0,canvas.width, canvas.height);
+            isPlaying = true; 
+            gameStartTime = Date.now();
+            updatePreciseTimer();
+            resizeCanvas(); nextRound();
+        }
+
+        function updatePreciseTimer() {
+            if (!isPlaying) return;
+            let now = Date.now();
+            let diff = (now - gameStartTime) / 1000;
+            elPreciseTimer.innerText = diff.toFixed(2);
+            requestAnimationFrame(updatePreciseTimer);
+        }
+
+        function nextRound() {
+            if (!isPlaying) return;
+            document.getElementById('spelling-overlay').classList.remove('show-spelling');
+            maxTime = Math.max(2000, 5000 - (currentScore * 50)); 
+            generateQuestion();
+            elTimer.style.width = "100%";
+            elTimer.style.background = "linear-gradient(to right, #4CAF50, #8BC34A)";
+            setTimeout(() => speakCurrentWord(), 400);
+            startTimer();
+        }
+
+        function generateQuestion() {
+            const targetIndex = Math.floor(Math.random() * wordData.length);
+            currentTarget = wordData[targetIndex];
+            let options = [currentTarget];
+            while (options.length < 4) {
+                let r = wordData[Math.floor(Math.random() * wordData.length)];
+                if (!options.includes(r)) options.push(r);
+            }
+            options.sort(() => Math.random() - 0.5);
+            elOptions.innerHTML = "";
+            options.forEach(item => {
+                const btn = document.createElement('div');
+                btn.className = "option-btn";
+                btn.innerHTML = getSVG(item.t).replace('<svg ', '<svg class="option-svg" ');
+                btn.onclick = () => checkAnswer(item, btn);
+                elOptions.appendChild(btn);
+            });
+        }
+
+        function startTimer() {
+            clearInterval(timerInterval);
+            let startTime = Date.now();
+            timerInterval = setInterval(() => {
+                if (!isPlaying) { clearInterval(timerInterval); return; }
+                let elapsed = Date.now() - startTime;
+                timeLeft = maxTime - elapsed;
+                let pct = (timeLeft / maxTime) * 100;
+                elTimer.style.width = pct + "%";
+                if (pct < 30) elTimer.style.background = "#D32F2F";
+                if (timeLeft <= 0) { clearInterval(timerInterval); gameOver(); }
+            }, 50);
+        }
+
+        function checkAnswer(selectedItem, btnElement) {
+            if (!isPlaying) return;
+            if (selectedItem === currentTarget) {
+                clearInterval(timerInterval);
+                playSound('correct');
+                btnElement.classList.add('correct');
+                currentScore++;
+                elScore.innerText = currentScore;
+                
+                let progressPct = (currentScore / 10) * 100;
+                if (progressPct > 100) progressPct = 100;
+                elProgress.style.width = progressPct + "%";
+
+                document.getElementById('spelling-overlay').innerText = currentTarget.w;
+                document.getElementById('spelling-overlay').classList.add('show-spelling');
+
+                if (currentScore >= 10) {
+                    gameWon();
+                } else {
+                    setTimeout(nextRound, 1200);
+                }
+
+            } else {
+                playSound('wrong');
+                btnElement.classList.add('wrong');
+                gameWrapper.style.animation = "shake 0.4s";
+                setTimeout(()=> gameWrapper.style.animation = "", 400);
+                clearInterval(timerInterval);
+                maxTime = Math.max(0, timeLeft - 2000); 
+                if (maxTime <= 0) gameOver(); else startTimer(); 
+            }
+        }
+
+        function gameWon() {
+            isPlaying = false;
+            let finalTime = ((Date.now() - gameStartTime) / 1000).toFixed(2);
+            elFinalTimeText.innerText = "Total Time: " + finalTime + "s";
+            const cheer = cheerWords[Math.floor(Math.random() * cheerWords.length)];
+            elMenu.style.display = "flex"; elGame.style.display = "none";
+            document.getElementById('spelling-overlay').classList.remove('show-spelling');
+            elFinalMessage.style.display = "block";
+            elWinText.innerText = cheer;
+            document.getElementById('title-text').innerText = "Mission Complete!";
+            btnStart.innerText = "PLAY AGAIN";
+            if (currentScore > highScore) {
+                highScore = currentScore;
+                localStorage.setItem('vehicleSvgHighScore', highScore);
+            }
+            elHighScoreNum.innerText = highScore;
+            playSound('win');
+            startConfetti();
+        }
+
+        function gameOver() {
+            isPlaying = false;
+            elMenu.style.display = "flex"; elGame.style.display = "none";
+            document.getElementById('spelling-overlay').classList.remove('show-spelling');
+            document.getElementById('final-score').style.display = "block";
+            document.getElementById('final-score').innerText = currentScore;
+            document.getElementById('title-text').innerText = "Game Over";
+            btnStart.innerText = "TRY AGAIN";
+            if (currentScore > highScore) {
+                highScore = currentScore;
+                localStorage.setItem('vehicleSvgHighScore', highScore);
+                playSound('win');
+                startConfetti();
+            } else {
+                playSound('gameover');
+            }
+            elHighScoreNum.innerText = highScore;
+        }
+
+        function speakCurrentWord() {
+            if (!currentTarget) return;
+            synth.cancel();
+            const utterance = new SpeechSynthesisUtterance(currentTarget.w);
+            utterance.lang = 'en-US'; utterance.rate = 1.0; 
+            const voices = synth.getVoices();
+            const preferredVoice = voices.find(v => v.name.includes("Google US") || v.name.includes("Samantha"));
+            if (preferredVoice) utterance.voice = preferredVoice;
+            synth.speak(utterance);
+            
+            const btn = document.querySelector('.pika-btn');
+            btn.style.transition = "transform 0.2s";
+            btn.style.transform = "scale(1.1) rotate(5deg)";
+            setTimeout(() => btn.style.transform = "scale(1) rotate(0deg)", 200);
+        }
+
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function playSound(type) {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const osc = audioCtx.createOscillator(); const gainNode = audioCtx.createGain();
+            osc.connect(gainNode); gainNode.connect(audioCtx.destination);
+            const now = audioCtx.currentTime;
+            if (type === 'correct') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(600, now); osc.frequency.exponentialRampToValueAtTime(1000, now + 0.1);
+                gainNode.gain.setValueAtTime(0.01, now); gainNode.gain.linearRampToValueAtTime(0.15, now + 0.05); gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+                osc.start(now); osc.stop(now + 0.4);
+            } else if (type === 'wrong') {
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(150, now); osc.frequency.linearRampToValueAtTime(100, now + 0.2);
+                gainNode.gain.setValueAtTime(0.01, now); gainNode.gain.linearRampToValueAtTime(0.15, now + 0.05); gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+                osc.start(now); osc.stop(now + 0.3);
+            } else if (type === 'win') {
+                [523, 659, 783].forEach((f,i) => {
+                    const o = audioCtx.createOscillator(); const g = audioCtx.createGain();
+                    o.connect(g); g.connect(audioCtx.destination); o.type='sine'; o.frequency.value=f;
+                    let t = now + i*0.1;
+                    g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(0.1, t+0.05); g.gain.exponentialRampToValueAtTime(0.001, t+0.5);
+                    o.start(t); o.stop(t+0.5);
+                });
+            } else {
+                osc.type = 'triangle'; osc.frequency.setValueAtTime(300, now); osc.frequency.exponentialRampToValueAtTime(100, now + 1);
+                gainNode.gain.setValueAtTime(0.1, now); gainNode.gain.linearRampToValueAtTime(0.001, now + 1);
+                osc.start(now); osc.stop(now + 1);
+            }
+        }
+        window.speechSynthesis.onvoiceschanged = () => {};
+
+        let particles = []; let confettiActive = false;
+        const colors = ['#FF0000', '#FFFFFF', '#FFCB05', '#3B4CCA'];
+        function resizeCanvas() { canvas.width = gameWrapper.offsetWidth; canvas.height = gameWrapper.offsetHeight; }
+        function startConfetti() {
+            confettiActive = true; particles = [];
+            for (let i = 0; i < 150; i++) {
+                particles.push({x: canvas.width/2, y: canvas.height/2+50, vx: (Math.random()-0.5)*20, vy: (Math.random()-1)*20-5, color: colors[Math.floor(Math.random()*colors.length)], size: Math.random()*8+4, life: 1});
+            }
+            requestAnimationFrame(updateConfetti);
+        }
+        function updateConfetti() {
+            if (!confettiActive) return;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            let alive = false;
+            particles.forEach(p => {
+                p.x += p.vx; p.y += p.vy; p.vy += 0.5; p.life -= 0.01;
+                if (p.life > 0) { alive = true; ctx.globalAlpha = p.life; ctx.fillStyle = p.color; ctx.beginPath(); ctx.arc(p.x, p.y, p.size/2, 0, Math.PI*2); ctx.fill(); }
+            });
+            if (alive) requestAnimationFrame(updateConfetti); else confettiActive = false;
+        }
+    </script>
+</body>
+</html>
